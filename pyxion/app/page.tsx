@@ -2,9 +2,6 @@
 
 import { useState, type ChangeEvent } from "react";
 import Dropdown from "./Dropdown";
-import { Luckiest_Guy } from "next/font/google";
-
-const luckiest = Luckiest_Guy({ weight: "400", subsets: ["latin"] });
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -36,9 +33,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen font-sans bg-[#000]">
 
       <nav className="h-[10vh] w-full bg-[#393b3d] text-white px-[10px] flex flex-row items-center gap-[14px] font-sans">
-        <h2 className={`${luckiest.className} mr-auto text-[40px] font-bold text-white [-webkit-text-stroke:2px_#f03f00]`}>
-          Pyxion
-        </h2>
+        <img src="/fullLogo.png" className="h-[60px] mr-auto"/>
         <button className="font-bold hover:underline cursor-pointer">Home</button>
         <button className="font-bold hover:underline cursor-pointer">About</button>
         <button className="font-bold hover:underline cursor-pointer">Contact</button>
@@ -53,10 +48,8 @@ export default function Home() {
         style={{ backgroundImage: "url('/background.jpg')" }}
       >
         <div className="relative flex flex-col w-1/2 h-full justify-center pl-[120px]">
-          <h2 className={`${luckiest.className} text-[120px] font-bold text-white [-webkit-text-stroke:5px_#f03f00] z-50`}>
-            Pyxion
-          </h2>
-          <div className="absolute bottom-[220px] left-[120px] bg-black/75 p-[25px] font-extralight">
+          <img src="/fullLogo.png" className="z-999 translate-x-[-60px] translate-y-[-10px]"/>
+          <div className="absolute bottom-[200px] right-[230px] bg-black/75 p-[25px] font-extralight">
             <h1 className="text-3xl text-white">Powering Fun</h1>
           </div>
         </div>
