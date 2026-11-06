@@ -1,3 +1,9 @@
+// To-Do:
+//
+// Optimize shaders further and add per setting shaders (eg. graphics level 1
+// should use the cheapest shader while level 10 should use a heavier, nicer
+// looking shader) Create custom shader creation for Pyxion Studio but sandboxed
+// (temporarily) to avoid bugs
 
 #pragma once
 
@@ -8,45 +14,40 @@
 // SHADER ERROR CHECKING
 // ============================================================
 
-inline bool checkShaderCompile(unsigned int shader, const char* name)
-{
-    int success = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+inline bool checkShaderCompile(unsigned int shader, const char *name) {
+  int success = 0;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 
-    if (!success)
-    {
-        char log[1024];
-        glGetShaderInfoLog(shader, sizeof(log), NULL, log);
-        std::cerr << name << " shader failed to compile:\n"
-                  << log << std::endl;
-        return false;
-    }
+  if (!success) {
+    char log[1024];
+    glGetShaderInfoLog(shader, sizeof(log), NULL, log);
+    std::cerr << name << " shader failed to compile:\n" << log << std::endl;
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
-inline bool checkProgramLink(unsigned int program)
-{
-    int success = 0;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
+inline bool checkProgramLink(unsigned int program) {
+  int success = 0;
+  glGetProgramiv(program, GL_LINK_STATUS, &success);
 
-    if (!success)
-    {
-        char log[1024];
-        glGetProgramInfoLog(program, sizeof(log), NULL, log);
-        std::cerr << "Shader program failed to link:\n"
-                  << log << std::endl;
-        return false;
-    }
+  if (!success) {
+    char log[1024];
+    glGetProgramInfoLog(program, sizeof(log), NULL, log);
+    std::cerr << "Shader program failed to link:\n" << log << std::endl;
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
 // ============================================================
 // MAIN VERTEX SHADER
 // ============================================================
 
-inline const char* vertexShaderSource = "#version 330 core\n"
+inline const char *vertexShaderSource =
+    "#version 330 core\n"
 
     "layout (location = 0) in vec3 aPos;\n"
     "layout (location = 1) in vec3 aNormal;\n"
@@ -77,7 +78,8 @@ inline const char* vertexShaderSource = "#version 330 core\n"
 // MAIN FRAGMENT SHADER
 // ============================================================
 
-inline const char* fragmentShaderSource = "#version 330 core\n"
+inline const char *fragmentShaderSource =
+    "#version 330 core\n"
 
     "in vec3 FragNormal;\n"
     "in vec3 FragPos;\n"
@@ -189,7 +191,8 @@ inline const char* fragmentShaderSource = "#version 330 core\n"
 // SHADOW DEPTH SHADERS
 // ============================================================
 
-inline const char* shadowVertexShaderSource = "#version 330 core\n"
+inline const char *shadowVertexShaderSource =
+    "#version 330 core\n"
 
     "layout (location = 0) in vec3 aPos;\n"
 
@@ -201,118 +204,91 @@ inline const char* shadowVertexShaderSource = "#version 330 core\n"
     "    gl_Position = lightSpaceMatrix * model * vec4(aPos, 1.0);\n"
     "}\n";
 
-inline const char* shadowFragmentShaderSource = "#version 330 core\n"
+inline const char *shadowFragmentShaderSource = "#version 330 core\n"
 
-    "void main()\n"
-    "{\n"
-    "}\n";
+                                                "void main()\n"
+                                                "{\n"
+                                                "}\n";
 
 // ============================================================
 // SHADOW MAP MANAGER
 // ============================================================
 
-class ShadowMap
-{
+class ShadowMap {
 public:
+  static constexpr unsigned int WIDTH = 1024;
+  static constexpr unsigned int HEIGHT = 1024;
 
-    static constexpr unsigned int WIDTH = 1024;
-    static constexpr unsigned int HEIGHT = 1024;
+  unsigned int FBO = 0;
+  unsigned int depthMap = 0;
 
-    unsigned int FBO = 0;
-    unsigned int depthMap = 0;
+  bool init() {
+    glGenFramebuffers(1, &FBO);
+    glGenTextures(1, &depthMap);
 
-    bool init()
-    {
-        glGenFramebuffers(1, &FBO);
-        glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
 
-        glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, WIDTH, HEIGHT, 0,
+                 GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_DEPTH_COMPONENT24,
-            WIDTH,
-            HEIGHT,
-            0,
-            GL_DEPTH_COMPONENT,
-            GL_FLOAT,
-            nullptr
-        );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
 
-        float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-        glTexParameterfv(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_BORDER_COLOR,
-            borderColor
-        );
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                           depthMap, 0);
 
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER,
-            GL_DEPTH_ATTACHMENT,
-            GL_TEXTURE_2D,
-            depthMap,
-            0
-        );
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
 
-        glDrawBuffer(GL_NONE);
-        glReadBuffer(GL_NONE);
+    bool complete =
+        glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 
-        bool complete =
-            glCheckFramebufferStatus(GL_FRAMEBUFFER)
-            == GL_FRAMEBUFFER_COMPLETE;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        if (!complete)
-        {
-            std::cerr << "Shadow framebuffer incomplete!\n";
-            return false;
-        }
-
-        return true;
+    if (!complete) {
+      std::cerr << "Shadow framebuffer incomplete!\n";
+      return false;
     }
 
-    void begin()
-    {
-        glViewport(0, 0, WIDTH, HEIGHT);
+    return true;
+  }
 
-        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+  void begin() {
+    glViewport(0, 0, WIDTH, HEIGHT);
 
-        glClear(GL_DEPTH_BUFFER_BIT);
-    }
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
-    void end(int screenWidth, int screenHeight)
-    {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_DEPTH_BUFFER_BIT);
+  }
 
-        glViewport(0, 0, screenWidth, screenHeight);
-    }
+  void end(int screenWidth, int screenHeight) {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    void bind(unsigned int textureUnit = 1)
-    {
-        glActiveTexture(GL_TEXTURE0 + textureUnit);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
-    }
+    glViewport(0, 0, screenWidth, screenHeight);
+  }
 
-    void cleanup()
-    {
-        if (depthMap)
-            glDeleteTextures(1, &depthMap);
+  void bind(unsigned int textureUnit = 1) {
+    glActiveTexture(GL_TEXTURE0 + textureUnit);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+  }
 
-        if (FBO)
-            glDeleteFramebuffers(1, &FBO);
+  void cleanup() {
+    if (depthMap)
+      glDeleteTextures(1, &depthMap);
 
-        depthMap = 0;
-        FBO = 0;
-    }
+    if (FBO)
+      glDeleteFramebuffers(1, &FBO);
+
+    depthMap = 0;
+    FBO = 0;
+  }
 };
