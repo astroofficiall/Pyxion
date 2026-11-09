@@ -1,25 +1,16 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import "./globals.css"
 
-export const metadata: Metadata = {
-  title: "Pyxion",
-  description: "Pyxion",
-  icons: {
-    icon: "icon.png",
-  },
-};
+export const metadata = {
+  "title": "Dishscord"
+}
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`h-full antialiased`}
+      className="h-full antialiased bg-black m-0xl"
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-screen min-w-screen m-[0px] bg-black">{children}</body>
     </html>
   );
 }
